@@ -1,0 +1,11 @@
+table:
+  name: friend
+  schema: public
+array_relationships:
+  - name: pizza_orders
+    using:
+      foreign_key_constraint_on:
+        column: friend_id
+        table:
+          name: pizza_order
+          schema: public
