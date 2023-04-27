@@ -1,9 +1,56 @@
 import Image from "next/image";
 import { Inter } from "next/font/google";
+import {
+  GetStaticProps,
+  GetStaticPaths,
+  GetServerSideProps,
+  InferGetServerSidePropsType,
+} from "next";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export default function Home() {
+type Data = {
+  friend: Record<string, string>[];
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  let friends;
+  try {
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_HASURA_PROJECT_ENDPOINT as string,
+      {
+        method: "POST",
+        headers: {
+          "x-hasura-admin-secret": process.env.HASURA_ADMIN_SECRET as string,
+        },
+        body: JSON.stringify({
+          query: `query {
+            friend {
+              name
+            }
+          }`,
+        }),
+      }
+    );
+
+    const result = await response.json();
+    const data: Data = result.data;
+
+    friends = data.friend;
+  } catch (error) {
+    console.log(error);
+  }
+
+  return {
+    props: {
+      friends,
+    },
+  };
+};
+
+export default function Home({
+  friends,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <main
       className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
@@ -33,7 +80,9 @@ export default function Home() {
         </div>
       </div>
 
-      <p>Hello World</p>
+      {friends.map((friend: { name: string }) => (
+        <p key={friend.name}>{friend.name}</p>
+      ))}
 
       <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
         <Image
